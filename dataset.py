@@ -3,36 +3,22 @@
 
 from __future__ import print_function
 
-import argparse
-import functools
-import glob
 import os
 import random
-import shutil
-from datetime import datetime as dt
-
 import chainer
 import chainer.functions as F
 import chainer.links as L
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 from chainer import datasets, iterators, training
 from chainer.dataset import concat_examples, convert, dataset_mixin
 from chainer.training import extensions, triggers
 
-import chainercv
 import cv2
-import losses
-from chainercv2.model_provider import get_model as chcv2_get_model
 from chainercv.transforms import (center_crop, random_crop, random_flip,
                                   resize, resize_contain, rotate)
 from chainercv.utils import read_image, write_image
-#from chainerui.extensions import CommandsExtension
-from chainerui.utils import save_args
 from consts import dtypes, optim, columns
-
-THRESHOLD = 0.5
 
 ## dataset preparation
 class Dataset(dataset_mixin.DatasetMixin):
@@ -83,6 +69,7 @@ class Dataset(dataset_mixin.DatasetMixin):
             self.scale_to = int(self.ch*5/3)  ## cut 1/5 from every edge
         else:
             self.scale_to = args.scale_to
+
         if args.case == '4': ## 4-class classification
             if not (np.max(dat,axis=1)>0).all():
                 print("some labels are wrong!")
@@ -95,7 +82,7 @@ class Dataset(dataset_mixin.DatasetMixin):
             self.chs = np.max(self.cls) + 1 ## number of classes
             self.header = "filename,true,pred,score"
             print("#class {}".format([sum(self.cls==i) for i in range(self.chs)]))
-        else:
+        else:  ## multi regression
             if args.case in colname:
                 i = colname.index(args.case)
                 m = (i,i+1)
@@ -118,7 +105,7 @@ class Dataset(dataset_mixin.DatasetMixin):
             print("#Total samples: {}".format(len(self.cls)))
 #            for i in range(len(colname)):
 #                print(colname[i],np.max(self.cls[:,i]))
-    
+
         if self.save_preprocessed_image:
             os.makedirs(self.save_preprocessed_image, exist_ok=True)
 
